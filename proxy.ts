@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parse } from "cookie";
-import { checkServerSession } from "./lib/api/serverApi";
+import { checkSession } from "./lib/api/serverApi";
 
 const privateRoutes = ["/profile", "/notes"];
 const publicRoutes = ["/sign-in", "/sign-up"];
@@ -17,8 +17,9 @@ export async function proxy(request: NextRequest) {
 
   if (!accessToken) {
     if (refreshToken) {
-      const data = await checkServerSession();
-      const setCookie = data.headers["set-cookie"];
+      try {
+        const data = await checkSession();
+        const setCookie = data.headers["set-cookie"];
 
       if (setCookie) {
         const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -50,6 +51,9 @@ export async function proxy(request: NextRequest) {
             },
           });
         }
+      }
+      } catch (error) {
+        // If session check fails, continue with normal flow
       }
     }
 

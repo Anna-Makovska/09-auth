@@ -11,66 +11,39 @@ export async function GET() {
     const accessToken = cookieStore.get("accessToken")?.value;
     const refreshToken = cookieStore.get("refreshToken")?.value;
 
-    if (!accessToken && !refreshToken) {
-      return NextResponse.json({ success: false }, { status: 200 });
+    if (accessToken) {
+      return NextResponse.json({ success: true });
     }
 
-    // Try to get user data
-    try {
-      const userRes = await api.get("/users/me", {
+    if (refreshToken) {
+      const apiRes = await api.get("auth/session", {
         headers: {
           Cookie: cookieStore.toString(),
         },
       });
 
-      return NextResponse.json({ success: true, user: userRes.data }, { status: 200 });
-    } catch (userError) {
-      // If accessToken expired but we have refreshToken, try to refresh
-      if (refreshToken && isAxiosError(userError) && userError.response?.status === 401) {
-        try {
-          const apiRes = await api.get("auth/session", {
-            headers: {
-              Cookie: cookieStore.toString(),
-            },
-          });
+      const setCookie = apiRes.headers["set-cookie"];
 
-          const setCookie = apiRes.headers["set-cookie"];
+      if (setCookie) {
+        const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+        for (const cookieStr of cookieArray) {
+          const parsed = parse(cookieStr);
 
-          if (setCookie) {
-            const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
-            for (const cookieStr of cookieArray) {
-              const parsed = parse(cookieStr);
+          const options = {
+            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+            path: parsed.Path,
+            maxAge: Number(parsed["Max-Age"]),
+          };
 
-              const options = {
-                expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
-                path: parsed.Path,
-                maxAge: Number(parsed["Max-Age"]),
-              };
-
-              if (parsed.accessToken)
-                cookieStore.set("accessToken", parsed.accessToken, options);
-              if (parsed.refreshToken)
-                cookieStore.set("refreshToken", parsed.refreshToken, options);
-            }
-
-            // Try to get user data again with new token
-            const userRes = await api.get("/users/me", {
-              headers: {
-                Cookie: cookieStore.toString(),
-              },
-            });
-
-            return NextResponse.json({ success: true, user: userRes.data }, { status: 200 });
-          }
-        } catch (refreshError) {
-          logErrorResponse(isAxiosError(refreshError) ? refreshError.response?.data : { message: (refreshError as Error).message });
-          return NextResponse.json({ success: false }, { status: 200 });
+          if (parsed.accessToken)
+            cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.refreshToken)
+            cookieStore.set("refreshToken", parsed.refreshToken, options);
         }
+        return NextResponse.json({ success: true }, { status: 200 });
       }
-
-      logErrorResponse(isAxiosError(userError) ? userError.response?.data : { message: (userError as Error).message });
-      return NextResponse.json({ success: false }, { status: 200 });
     }
+    return NextResponse.json({ success: false }, { status: 200 });
   } catch (error) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);

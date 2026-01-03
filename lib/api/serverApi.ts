@@ -1,9 +1,14 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { cookies } from "next/headers";
 import type Note from "@/types/note";
 import type User from "@/types/user";
 
 const API_BASE_URL = "https://notehub-api.goit.study";
+
+// Create a dedicated Axios instance for server-side API calls
+const serverApiClient = axios.create({
+  baseURL: API_BASE_URL,
+});
 
 // ============================================
 // Types and Interfaces
@@ -60,13 +65,10 @@ export const fetchNotes = async (
 
   const headers = await getAuthHeaders();
 
-  const response = await axios.get<FetchNotesResponse>(
-    `${API_BASE_URL}/notes`,
-    {
-      headers,
-      params: queryParams,
-    }
-  );
+  const response = await serverApiClient.get<FetchNotesResponse>("/notes", {
+    headers,
+    params: queryParams,
+  });
 
   return response.data;
 };
@@ -74,7 +76,7 @@ export const fetchNotes = async (
 export const fetchNoteById = async (id: string): Promise<Note> => {
   const headers = await getAuthHeaders();
 
-  const response = await axios.get<Note>(`${API_BASE_URL}/notes/${id}`, {
+  const response = await serverApiClient.get<Note>(`/notes/${id}`, {
     headers,
   });
 
@@ -89,7 +91,7 @@ export const getMe = async (): Promise<User | null> => {
   try {
     const headers = await getAuthHeaders();
 
-    const response = await axios.get<User>(`${API_BASE_URL}/users/me`, {
+    const response = await serverApiClient.get<User>("/users/me", {
       headers,
     });
 
@@ -103,29 +105,12 @@ export const getMe = async (): Promise<User | null> => {
 // Authentication API
 // ============================================
 
-export const checkSession = async (): Promise<User | null> => {
-  try {
-    const headers = await getAuthHeaders();
+export const checkSession = async (): Promise<AxiosResponse<User>> => {
+  const headers = await getAuthHeaders();
 
-    const response = await axios.get<User>(`${API_BASE_URL}/auth/session`, {
-      headers,
-    });
-
-    return response.data || null;
-  } catch (error) {
-    return null;
-  }
-};
-
-export const checkServerSession = async () => {
-  const cookieStore = await cookies();
-  const nextServerBaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-  const res = await axios.get(`${nextServerBaseURL}/api/auth/session`, {
-    headers: {
-      Cookie: cookieStore.toString(),
-    },
+  const response = await serverApiClient.get<User>("/auth/session", {
+    headers,
   });
 
-  return res;
+  return response;
 };

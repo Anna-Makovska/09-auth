@@ -74,3 +74,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .viewDetailsLink {
+    color: #0d6efd;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .viewDetailsLink:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+  }

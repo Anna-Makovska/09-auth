@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 interface PrivateRoutesLayoutProps {
   children: ReactNode;
-  modal?: ReactNode;
+  modal: ReactNode;
 }
 
 export default function PrivateRoutesLayout({

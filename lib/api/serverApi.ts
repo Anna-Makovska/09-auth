@@ -116,3 +116,16 @@ export const checkSession = async (): Promise<User | null> => {
     return null;
   }
 };
+
+export const checkServerSession = async () => {
+  const cookieStore = await cookies();
+  const nextServerBaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+  const res = await axios.get(`${nextServerBaseURL}/api/auth/session`, {
+    headers: {
+      Cookie: cookieStore.toString(),
+    },
+  });
+
+  return res;
+};

@@ -15,11 +15,10 @@ export async function proxy(request: NextRequest) {
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isPrivateRoute = privateRoutes.some((route) => pathname.startsWith(route));
 
-  if (!accessToken) {
-    if (refreshToken) {
-      try {
-        const data = await checkSession();
-        const setCookie = data.headers["set-cookie"];
+  if (!accessToken && refreshToken) {
+    try {
+      const data = await checkSession();
+      const setCookie = data.headers["set-cookie"];
 
       if (setCookie) {
         const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -37,26 +36,30 @@ export async function proxy(request: NextRequest) {
         }
 
         if (isPublicRoute) {
-          return NextResponse.redirect(new URL("/", request.url), {
-            headers: {
-              Cookie: cookieStore.toString(),
-            },
-          });
+          return NextResponse.redirect(new URL("/", request.url));
         }
 
         if (isPrivateRoute) {
-          return NextResponse.next({
-            headers: {
-              Cookie: cookieStore.toString(),
-            },
-          });
+          return NextResponse.next();
         }
-      }
-      } catch (error) {
-        // If session check fails, continue with normal flow
-      }
-    }
 
+        return NextResponse.next();
+      }
+
+      if (isPrivateRoute) {
+        return NextResponse.redirect(new URL("/sign-in", request.url));
+      }
+      return NextResponse.next();
+    } catch (error) {
+      if (isPrivateRoute) {
+        return NextResponse.redirect(new URL("/sign-in", request.url));
+      }
+
+      return NextResponse.next();
+    }
+  }
+
+  if (!accessToken && !refreshToken) {
     if (isPublicRoute) {
       return NextResponse.next();
     }
@@ -64,15 +67,23 @@ export async function proxy(request: NextRequest) {
     if (isPrivateRoute) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
-  }
 
-  if (isPublicRoute) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (isPrivateRoute) {
     return NextResponse.next();
   }
+
+  if (accessToken) {
+    if (isPublicRoute) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    if (isPrivateRoute) {
+      return NextResponse.next();
+    }
+
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

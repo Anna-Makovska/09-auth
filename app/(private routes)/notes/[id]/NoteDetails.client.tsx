@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { fetchNoteById, deleteNote } from "@/lib/api/clientApi";
 import css from "./NoteDetails.module.css";
 
@@ -10,20 +12,13 @@ export default function NoteDetailsClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params.id;
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: note, isLoading, error } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
     enabled: Boolean(id),
     refetchOnMount: false,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      router.push("/notes/filter/all");
-    },
   });
 
   if (isLoading) {
@@ -34,9 +29,19 @@ export default function NoteDetailsClient() {
     return <p>Something went wrong.</p>;
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this note?")) {
-      deleteMutation.mutate(id);
+      setIsDeleting(true);
+      try {
+        await deleteNote(id);
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+        toast.success("Note deleted successfully!");
+        router.push("/notes/filter/all");
+      } catch (error) {
+        toast.error("Failed to delete note");
+        console.error("Failed to delete note:", error);
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -51,10 +56,10 @@ export default function NoteDetailsClient() {
           <p className={css.date}>{new Date(note.createdAt).toLocaleDateString()}</p>
           <button
             onClick={handleDelete}
-            disabled={deleteMutation.isPending}
+            disabled={isDeleting}
             className={css.deleteButton}
           >
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            {isDeleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

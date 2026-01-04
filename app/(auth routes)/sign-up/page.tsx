@@ -21,8 +21,8 @@ export default function SignUpPage() {
     const password = formData.get("password") as string;
 
     try {
-      const user = await register({ email, password });
-      setUser(user);
+      const registerResponse = await register({ email, password });
+      setUser(registerResponse);
       toast.success("Successfully registered! Welcome!");
       router.push("/profile");
     } catch (err: any) {

@@ -21,8 +21,8 @@ export default function SignInPage() {
     const password = formData.get("password") as string;
 
     try {
-      const user = await login({ email, password });
-      setUser(user);
+      const loginResponse = await login({ email, password });
+      setUser(loginResponse);
       toast.success("Successfully logged in!");
       router.push("/profile");
     } catch (err: any) {

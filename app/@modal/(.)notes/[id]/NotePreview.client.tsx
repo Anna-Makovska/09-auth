@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { fetchNoteById, deleteNote } from "@/lib/api/clientApi";
 import Modal from "@/components/Modal/Modal";
 import css from "./NotePreview.module.css";
@@ -13,22 +15,11 @@ interface NotePreviewProps {
 export default function NotePreview({ noteId }: NotePreviewProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: note, isLoading, error } = useQuery({
+  const { data: note } = useQuery({
     queryKey: ["note", noteId],
     queryFn: () => fetchNoteById(noteId),
-    enabled: Boolean(noteId),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      handleClose();
-      setTimeout(() => {
-        router.push("/notes/filter/all");
-      }, 100);
-    },
   });
 
   const handleClose = () => {
@@ -37,25 +28,24 @@ export default function NotePreview({ noteId }: NotePreviewProps) {
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this note?")) {
-      await deleteMutation.mutateAsync(noteId);
+      setIsDeleting(true);
+      try {
+        await deleteNote(noteId);
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+        toast.success("Note deleted successfully!");
+        handleClose();
+        setTimeout(() => {
+          router.push("/notes/filter/all");
+        }, 100);
+      } catch (error) {
+        toast.error("Failed to delete note");
+        console.error("Failed to delete note:", error);
+        setIsDeleting(false);
+      }
     }
   };
 
-  if (isLoading) {
-    return (
-      <Modal onClose={handleClose}>
-        <p>Loading, please wait...</p>
-      </Modal>
-    );
-  }
-
-  if (error || !note) {
-    return (
-      <Modal onClose={handleClose}>
-        <p>Something went wrong.</p>
-      </Modal>
-    );
-  }
+  if (!note) return null;
 
   return (
     <Modal onClose={handleClose}>
@@ -69,10 +59,10 @@ export default function NotePreview({ noteId }: NotePreviewProps) {
         </p>
         <button
           onClick={handleDelete}
-          disabled={deleteMutation.isPending}
+          disabled={isDeleting}
           className={css.deleteButton}
         >
-          {deleteMutation.isPending ? "Deleting..." : "Delete"}
+          {isDeleting ? "Deleting..." : "Delete"}
         </button>
       </div>
     </Modal>

@@ -59,6 +59,7 @@
     justify-content: space-between;
     align-items: center;
     margin-top: auto;
+    gap: 8px;
   }
 
   .tag {
@@ -86,4 +87,24 @@
   .viewDetailsLink:hover {
     color: #0b5ed7;
     text-decoration: underline;
+  }
+
+  .deleteButton {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #fff;
+    background-color: #dc3545;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .deleteButton:hover:not(:disabled) {
+    background-color: #bb2d3b;
+  }
+
+  .deleteButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { parse } from "cookie";
 import { checkSession } from "./lib/api/serverApi";
 
 const privateRoutes = ["/profile", "/notes"];
@@ -8,9 +6,8 @@ const publicRoutes = ["/sign-in", "/sign-up"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken")?.value;
-  const refreshToken = cookieStore.get("refreshToken")?.value;
+  const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
 
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isPrivateRoute = privateRoutes.some((route) => pathname.startsWith(route));
@@ -21,29 +18,27 @@ export async function proxy(request: NextRequest) {
       const setCookie = data.headers["set-cookie"];
 
       if (setCookie) {
+        const response = isPublicRoute
+          ? NextResponse.redirect(new URL("/", request.url))
+          : NextResponse.next();
+
         const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+
         for (const cookieStr of cookieArray) {
-          const parsed = parse(cookieStr);
-          const options = {
-            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
-            path: parsed.Path,
-            maxAge: Number(parsed["Max-Age"]),
-          };
-          if (parsed.accessToken)
-            cookieStore.set("accessToken", parsed.accessToken, options);
-          if (parsed.refreshToken)
-            cookieStore.set("refreshToken", parsed.refreshToken, options);
+          const cookieParts = cookieStr.split(';');
+          const [nameValue] = cookieParts;
+          const [name, value] = nameValue.split('=');
+
+          if (name && value) {
+            response.cookies.set(name.trim(), value.trim(), {
+              path: "/",
+              httpOnly: true,
+              sameSite: "lax",
+            });
+          }
         }
 
-        if (isPublicRoute) {
-          return NextResponse.redirect(new URL("/", request.url));
-        }
-
-        if (isPrivateRoute) {
-          return NextResponse.next();
-        }
-
-        return NextResponse.next();
+        return response;
       }
 
       if (isPrivateRoute) {

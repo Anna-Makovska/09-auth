@@ -1,24 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { fetchNoteById, deleteNote } from "@/lib/api/clientApi";
 import css from "./NoteDetails.module.css";
 
-export default function NoteDetailsClient() {
-  const params = useParams<{ id: string }>();
+interface NoteDetailsClientProps {
+  id: string;
+}
+
+export default function NoteDetailsClient({ id }: NoteDetailsClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const id = params.id;
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: note, isLoading, error } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
-    enabled: Boolean(id),
-    refetchOnMount: false,
   });
 
   if (isLoading) {
@@ -31,7 +29,6 @@ export default function NoteDetailsClient() {
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this note?")) {
-      setIsDeleting(true);
       try {
         await deleteNote(id);
         queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -40,7 +37,6 @@ export default function NoteDetailsClient() {
       } catch (error) {
         toast.error("Failed to delete note");
         console.error("Failed to delete note:", error);
-        setIsDeleting(false);
       }
     }
   };
@@ -56,10 +52,9 @@ export default function NoteDetailsClient() {
           <p className={css.date}>{new Date(note.createdAt).toLocaleDateString()}</p>
           <button
             onClick={handleDelete}
-            disabled={isDeleting}
             className={css.deleteButton}
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            Delete
           </button>
         </div>
       </div>

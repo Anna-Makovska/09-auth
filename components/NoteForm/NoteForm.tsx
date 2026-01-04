@@ -9,11 +9,7 @@ import { useNoteStore } from "@/lib/store/noteStore";
 import { createNote } from "@/lib/api/clientApi";
 import css from "./NoteForm.module.css";
 
-interface NoteFormProps {
-  onCancel: () => void;
-}
-
-export default function NoteForm({ onCancel }: NoteFormProps) {
+export default function NoteForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { draft, setDraft, clearDraft } = useNoteStore();
@@ -37,8 +33,11 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
       toast.success("Note created successfully!");
       router.push("/notes");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create note");
+    onError: (error: Error) => {
+      const message = error instanceof Error && 'response' in error
+        ? ((error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to create note")
+        : "Failed to create note";
+      toast.error(message);
     },
   });
 
@@ -166,7 +165,7 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
       </div>
 
       <div className={css.actions}>
-        <button type="button" className={css.cancelButton} onClick={onCancel} disabled={mutation.isPending}>
+        <button type="button" className={css.cancelButton} onClick={() => router.back()} disabled={mutation.isPending}>
           Cancel
         </button>
         <button type="submit" className={css.submitButton} disabled={mutation.isPending}>

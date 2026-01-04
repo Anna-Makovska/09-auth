@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
-import { fetchNoteById, deleteNote } from "@/lib/api/clientApi";
+import { useQuery } from "@tanstack/react-query";
+import { fetchNoteById } from "@/lib/api/clientApi";
 import Modal from "@/components/Modal/Modal";
 import css from "./NotePreview.module.css";
 
@@ -14,10 +12,8 @@ interface NotePreviewProps {
 
 export default function NotePreview({ noteId }: NotePreviewProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: note } = useQuery({
+  const { data: note, isLoading, error } = useQuery({
     queryKey: ["note", noteId],
     queryFn: () => fetchNoteById(noteId),
   });
@@ -26,26 +22,35 @@ export default function NotePreview({ noteId }: NotePreviewProps) {
     router.back();
   };
 
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this note?")) {
-      setIsDeleting(true);
-      try {
-        await deleteNote(noteId);
-        queryClient.invalidateQueries({ queryKey: ["notes"] });
-        toast.success("Note deleted successfully!");
-        handleClose();
-        setTimeout(() => {
-          router.push("/notes/filter/all");
-        }, 100);
-      } catch (error) {
-        toast.error("Failed to delete note");
-        console.error("Failed to delete note:", error);
-        setIsDeleting(false);
-      }
-    }
-  };
+  if (isLoading) {
+    return (
+      <Modal onClose={handleClose}>
+        <div className={css.container}>
+          <p>Loading, please wait...</p>
+        </div>
+      </Modal>
+    );
+  }
 
-  if (!note) return null;
+  if (error) {
+    return (
+      <Modal onClose={handleClose}>
+        <div className={css.container}>
+          <p>Something went wrong.</p>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (!note) {
+    return (
+      <Modal onClose={handleClose}>
+        <div className={css.container}>
+          <p>Note not found.</p>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal onClose={handleClose}>
@@ -57,13 +62,6 @@ export default function NotePreview({ noteId }: NotePreviewProps) {
         <p className={css.date}>
           {new Date(note.createdAt).toLocaleDateString()}
         </p>
-        <button
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className={css.deleteButton}
-        >
-          {isDeleting ? "Deleting..." : "Delete"}
-        </button>
       </div>
     </Modal>
   );

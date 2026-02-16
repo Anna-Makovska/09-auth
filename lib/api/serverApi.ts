@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type Note from "@/types/note";
 import type User from "@/types/user";
 
-const API_BASE_URL = "https://notehub-api.goit.study";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Create a dedicated Axios instance for server-side API calls
 const serverApiClient = axios.create({

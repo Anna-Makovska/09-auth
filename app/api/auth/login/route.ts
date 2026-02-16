@@ -19,11 +19,15 @@ export async function POST(req: NextRequest) {
         const parsed = parse(cookieStr);
         const options = {
           expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
-          path: parsed.Path,
-          maxAge: Number(parsed['Max-Age']),
+          path: parsed.Path || "/",
+          maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined,
+          httpOnly: true,
+          sameSite: "lax" as const,
+          secure: process.env.NODE_ENV === "production",
         };
-        if (parsed.accessToken) cookieStore.set('accessToken', parsed.accessToken, options);
-        if (parsed.refreshToken) cookieStore.set('refreshToken', parsed.refreshToken, options);
+        if (parsed.accessToken) cookieStore.set("accessToken", parsed.accessToken, options);
+        if (parsed.refreshToken) cookieStore.set("refreshToken", parsed.refreshToken, options);
+        if (parsed.sessionId) cookieStore.set("sessionId", parsed.sessionId, options);
       }
 
       return NextResponse.json(apiRes.data, { status: apiRes.status });

@@ -14,7 +14,7 @@ export default function AuthNavigation() {
     try {
       await logout();
       clearAuth();
-      router.push("/sign-in");
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }

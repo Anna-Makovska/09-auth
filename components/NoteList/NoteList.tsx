@@ -33,17 +33,19 @@ export default function NoteList({ notes }: NoteListProps) {
 
   return (
     <ul className={css.list}>
-      {notes.map((note) => (
-        <li key={note.id} className={css.listItem}>
+      {notes.map((note) => {
+        const noteId = note.id ?? note._id ?? "";
+        return (
+        <li key={noteId} className={css.listItem}>
           <h2 className={css.title}>{note.title}</h2>
           <p className={css.content}>{note.content}</p>
           <div className={css.footer}>
             <span className={css.tag}>{note.tag}</span>
-            <Link href={`/notes/${note.id}`} className={css.viewDetailsLink}>
+            <Link href={`/notes/${noteId}`} className={css.viewDetailsLink}>
               View details
             </Link>
             <button
-              onClick={() => handleDelete(note.id)}
+              onClick={() => handleDelete(noteId)}
               disabled={deleteMutation.isPending}
               className={css.deleteButton}
             >
@@ -51,7 +53,8 @@ export default function NoteList({ notes }: NoteListProps) {
             </button>
           </div>
         </li>
-      ))}
+      );
+    })}
     </ul>
   );
 }

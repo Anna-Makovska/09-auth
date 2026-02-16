@@ -101,15 +101,7 @@ export const logout = async (): Promise<void> => {
 };
 
 export const checkSession = async (): Promise<User | null> => {
-  try {
-    const response = await apiClient.get<{ success: boolean; user?: User }>("/auth/session");
-    if (response.data.success && response.data.user) {
-      return response.data.user;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
+  return null;
 };
 
 // ============================================

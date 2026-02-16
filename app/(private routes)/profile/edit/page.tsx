@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getMe, updateMe } from "@/lib/api/clientApi";
 import useAuthStore from "@/lib/store/authStore";
 import css from "./page.module.css";
 import type User from "@/types/user";
@@ -16,32 +15,21 @@ export default function EditProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await getMe();
-        setLocalUser(userData);
-        setUsername(userData.username);
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!storeUser) {
-      fetchUser();
-    } else {
+    if (storeUser) {
+      setLocalUser(storeUser);
       setUsername(storeUser.username);
-      setLoading(false);
     }
+    setLoading(false);
   }, [storeUser, setUser]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      const updatedUser = await updateMe({ username });
+      if (!storeUser) {
+        return;
+      }
+      const updatedUser = { ...storeUser, username };
       setUser(updatedUser);
       router.push("/profile");
     } catch (error) {
